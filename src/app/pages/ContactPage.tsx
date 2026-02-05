@@ -47,10 +47,19 @@ export function ContactPage() {
     const codes = getCountries();
     const items = codes
       .map((code) => {
-        const name = regionNames?.of(code) || code;
-        return { code, name };
+        // Defensive: in case a country code slips in without a calling code,
+        // avoid crashing the whole Contact page render.
+        try {
+          const dial = getCountryCallingCode(code as any);
+          const name = regionNames?.of(code) || code;
+          return { code, name, dial };
+        } catch {
+          return null;
+        }
       })
-      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+      .filter(Boolean) as Array<{ code: string; name: string; dial: string }>;
+
+    items.sort((a, b) => a.name.localeCompare(b.name, 'es'));
     return items;
   }, [regionNames]);
 
@@ -214,11 +223,10 @@ export function ContactPage() {
                       aria-label="Código de país"
                     >
                       {phoneCountryOptions.map((c) => {
-                        const dial = getCountryCallingCode(c.code as any);
                         const flag = flagEmoji(c.code);
                         return (
                           <option key={c.code} value={c.code}>
-                            {flag} +{dial} {c.name}
+                            {flag} +{c.dial} {c.name}
                           </option>
                         );
                       })}
