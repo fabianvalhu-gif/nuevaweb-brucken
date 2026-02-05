@@ -150,7 +150,9 @@ values ('insights', 'insights', true)
 on conflict (id) do update set public = true;
 
 -- Storage policies (needed for client-side uploads with Supabase Auth).
-alter table storage.objects enable row level security;
+-- Note: Supabase manages RLS on `storage.objects`. Enabling it here can fail
+-- with "must be owner of table objects" depending on project permissions.
+-- We'll only create the policies.
 
 drop policy if exists "public_read_insights_bucket" on storage.objects;
 create policy "public_read_insights_bucket"
