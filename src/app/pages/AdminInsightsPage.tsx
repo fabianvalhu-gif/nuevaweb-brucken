@@ -78,6 +78,7 @@ function parseReadTime(v: string) {
 export function AdminInsightsPage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(false);
@@ -117,6 +118,45 @@ export function AdminInsightsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setIsAdmin(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsAdmin(null);
+    setError(null);
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (cancelled) return;
+      const userId = data.session?.user.id;
+      if (!userId) {
+        setIsAdmin(false);
+        return;
+      }
+
+      const { data: adminRow, error: adminError } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (cancelled) return;
+      if (adminError) {
+        setIsAdmin(false);
+        setError(adminError.message);
+        return;
+      }
+
+      setIsAdmin(Boolean(adminRow?.user_id));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn]);
+
   async function refresh() {
     setLoading(true);
     setError(null);
@@ -132,8 +172,9 @@ export function AdminInsightsPage() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
+    if (isAdmin !== true) return;
     refresh();
-  }, [isLoggedIn]);
+  }, [isLoggedIn, isAdmin]);
 
   const titleHint = useMemo(() => {
     if (!editor.title) return '';
@@ -156,6 +197,7 @@ export function AdminInsightsPage() {
     await supabase.auth.signOut();
     setInsights([]);
     setEditor(EMPTY);
+    setIsAdmin(null);
   }
 
   async function onSave() {
@@ -299,6 +341,23 @@ export function AdminInsightsPage() {
 
           {authLoading ? (
             <div className="bg-white border border-gray-100 rounded-2xl p-8">Cargando...</div>
+          ) : isLoggedIn && isAdmin === null ? (
+            <div className="bg-white border border-gray-100 rounded-2xl p-8">Verificando permisos...</div>
+          ) : isLoggedIn && isAdmin === false ? (
+            <div className="max-w-[760px] mx-auto bg-white border border-gray-100 shadow-lg rounded-2xl p-8 lg:p-10">
+              <div className="text-sm uppercase tracking-[0.2em] text-gray-500">Acceso</div>
+              <div className="mt-3 text-2xl font-semibold text-gray-900">No autorizado</div>
+              <p className="mt-4 text-gray-600 font-light leading-relaxed">
+                Este usuario no esta habilitado como admin en Supabase. Verifica que su <code className="px-2 py-1 bg-gray-50 border border-gray-200 rounded">user_id</code> exista en la tabla <code className="px-2 py-1 bg-gray-50 border border-gray-200 rounded">public.admins</code>.
+              </p>
+              <button
+                onClick={signOut}
+                className="mt-8 inline-flex items-center gap-2 px-5 py-2 rounded-full bg-gray-900 text-white hover:bg-black transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Salir
+              </button>
+            </div>
           ) : isLoggedIn ? (
             <div className="grid lg:grid-cols-12 gap-10 items-start">
               <div className="lg:col-span-4 bg-white border border-gray-100 rounded-2xl overflow-hidden">
@@ -604,4 +663,3 @@ function LoginCard({
     </div>
   );
 }
-
