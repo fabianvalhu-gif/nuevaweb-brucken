@@ -179,3 +179,35 @@
     line-height: 1.5;
   }
 }
+
+@keyframes bg-logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.bg-logo-marquee-track {
+  animation: bg-logo-marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.bg-logo-marquee-logo {
+  filter: grayscale(1) saturate(0) contrast(1.15) brightness(0.6);
+  opacity: 0.75;
+  transition: filter 200ms ease, opacity 200ms ease;
+}
+
+.bg-logo-marquee-logo:hover {
+  opacity: 0.95;
+  filter: grayscale(1) saturate(0) contrast(1.2) brightness(0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-logo-marquee-track {
+    animation: none;
+    transform: translateX(0);
+  }
+}

@@ -15,6 +15,7 @@ import { InsightDetailPage } from '@/app/pages/InsightDetailPage';
 import { AdminInsightsPage } from '@/app/pages/AdminInsightsPage';
 import { InsightsIndexPage } from '@/app/pages/InsightsIndexPage';
 import { applySeo } from '@/app/lib/seo';
+import { SupportedByMarquee } from '@/app/components/SupportedByMarquee';
 
 export default function App() {
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function App() {
       <Header />
       <main>
         <HeroSection />
+        <SupportedByMarquee />
         <FeaturedInsight />
         <ServicesSection />
         <IndustriesSection />
