@@ -82,7 +82,7 @@ export function InsightDetailPage({ slug }: { slug: string }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Header />
+        <Header logoTone="dark" />
         <main className="pt-28 lg:pt-36 pb-24">
           <div className="max-w-[960px] mx-auto px-6 lg:px-12">
             <div className="h-6 w-40 bg-gray-100 rounded mb-6" />
@@ -99,7 +99,7 @@ export function InsightDetailPage({ slug }: { slug: string }) {
   if (error || !insight || insight.status !== 'published') {
     return (
       <div className="min-h-screen bg-white">
-        <Header />
+        <Header logoTone="dark" />
         <main className="pt-28 lg:pt-36 pb-24">
           <div className="max-w-[960px] mx-auto px-6 lg:px-12">
             <p className="text-sm uppercase tracking-[0.2em] text-gray-500">Insight</p>
@@ -125,7 +125,7 @@ export function InsightDetailPage({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header logoTone="dark" />
 
       <main className="pt-24 lg:pt-28">
         <section className="bg-white">
