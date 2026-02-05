@@ -1,5 +1,11 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/contacto", "destination": "/index.html" },
+    { "source": "/admin(.*)", "destination": "/index.html" },
+    { "source": "/insights", "destination": "/index.html" },
+    { "source": "/insights/(.*)", "destination": "/index.html" },
+    { "source": "/industrias/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/admin(.*)",
@@ -7,4 +13,3 @@
     }
   ]
 }
-

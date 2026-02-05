@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import { fetchPublishedInsights, type Insight } from '@/app/lib/insights';
+import { fetchPublishedInsightCards, type InsightCard } from '@/app/lib/insights';
 import { isSupabaseConfigured } from '@/app/lib/supabaseClient';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -21,7 +21,7 @@ function formatDate(dateIso: string | null) {
 }
 
 export function InsightsIndexPage() {
-  const [insights, setInsights] = useState<Insight[]>([]);
+  const [insights, setInsights] = useState<InsightCard[]>([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +31,7 @@ export function InsightsIndexPage() {
 
     setLoading(true);
     setError(null);
-    fetchPublishedInsights(50)
+    fetchPublishedInsightCards(50)
       .then((data) => {
         if (cancelled) return;
         setInsights(data);
@@ -170,4 +170,3 @@ export function InsightsIndexPage() {
     </div>
   );
 }
-

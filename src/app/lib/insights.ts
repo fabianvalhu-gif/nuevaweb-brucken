@@ -18,10 +18,34 @@ export type Insight = {
   updated_at: string;
 };
 
+export type InsightCard = Omit<Insight, 'content_md'>;
+
 function orderByPublishedDesc(a: Insight, b: Insight) {
   const ap = a.published_at ? new Date(a.published_at).getTime() : 0;
   const bp = b.published_at ? new Date(b.published_at).getTime() : 0;
   return bp - ap;
+}
+
+function orderByPublishedDescCards(a: InsightCard, b: InsightCard) {
+  const ap = a.published_at ? new Date(a.published_at).getTime() : 0;
+  const bp = b.published_at ? new Date(b.published_at).getTime() : 0;
+  return bp - ap;
+}
+
+export async function fetchPublishedInsightCards(limit = 6): Promise<InsightCard[]> {
+  if (!isSupabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from('insights')
+    .select(
+      'id,slug,title,excerpt,cover_image_url,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+    )
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data as InsightCard[]).slice().sort(orderByPublishedDescCards);
 }
 
 export async function fetchPublishedInsights(limit = 6): Promise<Insight[]> {
@@ -107,4 +131,3 @@ export async function deleteInsight(id: string) {
   const { error } = await supabase.from('insights').delete().eq('id', id);
   if (error) throw error;
 }
-

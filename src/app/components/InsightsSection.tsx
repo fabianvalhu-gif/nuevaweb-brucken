@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import { fetchPublishedInsights, type Insight } from '@/app/lib/insights';
+import { fetchPublishedInsightCards, type InsightCard } from '@/app/lib/insights';
 import { isSupabaseConfigured } from '@/app/lib/supabaseClient';
 
 export function InsightsSection() {
-  const [insights, setInsights] = useState<Insight[]>([]);
+  const [insights, setInsights] = useState<InsightCard[]>([]);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export function InsightsSection() {
     let cancelled = false;
 
     setLoading(true);
-    fetchPublishedInsights(3)
+    fetchPublishedInsightCards(3)
       .then((data) => {
         if (cancelled) return;
         setInsights(data);
