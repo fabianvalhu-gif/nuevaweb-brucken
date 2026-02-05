@@ -1,9 +1,21 @@
+import { useMemo, useState } from 'react';
 import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import { motion } from 'motion/react';
 import { Send } from 'lucide-react';
 
 export function ContactPage() {
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  const isSending = status === 'sending';
+
+  const helper = useMemo(() => {
+    if (status === 'sent') return 'Mensaje enviado. Te responderemos pronto.';
+    if (status === 'error') return error ?? 'No se pudo enviar. Intenta nuevamente.';
+    return 'Respondemos en menos de 24 horas hábiles. Si lo prefieres, escríbenos a soporte@bruckenglobal.com.';
+  }, [status, error]);
+
   return (
     <div className="min-h-screen bg-white">
       <Header logoTone="dark" />
@@ -27,13 +39,53 @@ export function ContactPage() {
 
           <div className="grid lg:grid-cols-3 gap-10 items-start">
             <div className="lg:col-span-2 bg-white border border-gray-100 shadow-lg rounded-2xl p-8 lg:p-10">
-              <form className="space-y-7">
+              <form
+                className="space-y-7"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setStatus('sending');
+                  setError(null);
+
+                  const form = e.currentTarget;
+                  const data = new FormData(form);
+                  const payload = Object.fromEntries(data.entries());
+
+                  try {
+                    const res = await fetch('/api/contact', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        fullName: payload.fullName,
+                        email: payload.email,
+                        company: payload.company,
+                        country: payload.country,
+                        interest: payload.interest,
+                        message: payload.message,
+                        consent: payload.consent === 'on',
+                        website: payload.website, // honeypot
+                      }),
+                    });
+
+                    const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+                    if (!res.ok || !json.ok) {
+                      throw new Error(json.error || `Error ${res.status}`);
+                    }
+
+                    setStatus('sent');
+                    form.reset();
+                  } catch (err: unknown) {
+                    setStatus('error');
+                    setError(err instanceof Error ? err.message : 'Error enviando formulario');
+                  }
+                }}
+              >
                 <div className="grid md:grid-cols-2 gap-6">
                   <label className="flex flex-col gap-2 text-sm text-gray-800">
                     Nombre completo
                     <input
                       required
                       type="text"
+                      name="fullName"
                       placeholder="Tu nombre"
                       className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
                       autoComplete="name"
@@ -44,6 +96,7 @@ export function ContactPage() {
                     <input
                       required
                       type="email"
+                      name="email"
                       placeholder="nombre@empresa.com"
                       className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
                       autoComplete="email"
@@ -53,6 +106,7 @@ export function ContactPage() {
                     Empresa
                     <input
                       type="text"
+                      name="company"
                       placeholder="Nombre de la empresa"
                       className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
                       autoComplete="organization"
@@ -62,6 +116,7 @@ export function ContactPage() {
                     País
                     <input
                       type="text"
+                      name="country"
                       placeholder="Chile, México, Colombia..."
                       className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
                       autoComplete="country-name"
@@ -69,9 +124,22 @@ export function ContactPage() {
                   </label>
                 </div>
 
+                {/* Honeypot (spam bots) */}
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  className="hidden"
+                  aria-hidden="true"
+                />
+
                 <label className="flex flex-col gap-2 text-sm text-gray-800">
                   Interés principal
-                  <select className="rounded-lg border border-gray-200 bg-white px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors">
+                  <select
+                    name="interest"
+                    className="rounded-lg border border-gray-200 bg-white px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                  >
                     <option value="">Selecciona una opción</option>
                     <option>Consultoría estratégica</option>
                     <option>Transformación tecnológica</option>
@@ -86,6 +154,8 @@ export function ContactPage() {
                   Detalles de tu proyecto
                   <textarea
                     rows={4}
+                    name="message"
+                    required
                     placeholder="Cuéntanos el contexto, objetivos y tiempos"
                     className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
                   />
@@ -95,20 +165,24 @@ export function ContactPage() {
                 </label>
 
                 <label className="flex items-start gap-3 text-sm text-gray-700">
-                  <input type="checkbox" className="mt-1" required />
+                  <input type="checkbox" name="consent" className="mt-1" required />
                   Acepto la política de privacidad y autorizo el tratamiento de mis datos.
                 </label>
 
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 text-sm uppercase tracking-[0.08em] hover:bg-gray-800 transition-colors rounded-lg shadow-sm"
+                  disabled={isSending}
+                  className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 text-sm uppercase tracking-[0.08em] hover:bg-gray-800 transition-colors rounded-lg shadow-sm disabled:opacity-60"
                 >
-                  Enviar mensaje
+                  {isSending ? 'Enviando...' : 'Enviar mensaje'}
                   <Send className="w-4 h-4" />
                 </button>
 
-                <p className="text-xs text-gray-500">
-                  Respondemos en menos de 24 horas hábiles. Si lo prefieres, escríbenos a soporte@bruckenglobal.com.
+                <p
+                  className={`text-xs ${status === 'sent' ? 'text-emerald-700' : status === 'error' ? 'text-rose-700' : 'text-gray-500'}`}
+                  role={status === 'error' ? 'alert' : 'status'}
+                >
+                  {helper}
                 </p>
               </form>
             </div>
@@ -124,8 +198,8 @@ export function ContactPage() {
 
               <div className="mt-8 text-sm text-white/80 space-y-2">
                 <p>soporte@bruckenglobal.com</p>
-                <p>+52 55 1234 5678</p>
-                <p>Santiago · CDMX · Bogotá</p>
+                <p>+56 9 9317 6140</p>
+                <p>Santiago · Chile</p>
               </div>
             </div>
           </div>

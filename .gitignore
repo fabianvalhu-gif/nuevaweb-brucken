@@ -7,6 +7,8 @@ dist/
 # local env
 .env
 .env.*
+!.env.example
+.vercel/
 
 # logs
 npm-debug.log*
@@ -21,4 +23,3 @@ pnpm-debug.log*
 
 # Vite cache
 .vite/
-
