@@ -3,10 +3,11 @@ import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { fetchInsightBySlug, type Insight } from '@/app/lib/insights';
-import { ChevronLeft, Clock } from 'lucide-react';
+import { ChevronLeft, Clock, Share2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 function formatDate(dateIso: string | null) {
   if (!dateIso) return '';
@@ -56,6 +57,27 @@ export function InsightDetailPage({ slug }: { slug: string }) {
     const readTime = insight.read_time_min ? `${insight.read_time_min} min` : null;
     return { dateLabel, readTime };
   }, [insight]);
+
+  const shareUrl = useMemo(() => {
+    if (typeof window === 'undefined') return `/insights/${slug}`;
+    try {
+      return new URL(`/insights/${slug}`, window.location.origin).toString();
+    } catch {
+      return window.location.href;
+    }
+  }, [slug]);
+
+  const shareLinks = useMemo(() => {
+    const title = insight?.title ?? 'Brücken Global';
+    const encodedUrl = encodeURIComponent(shareUrl);
+    const encodedTitle = encodeURIComponent(title);
+
+    return {
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`${title} ${shareUrl}`)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      x: `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedUrl}`,
+    };
+  }, [insight?.title, shareUrl]);
 
   if (loading) {
     return (
@@ -138,6 +160,62 @@ export function InsightDetailPage({ slug }: { slug: string }) {
                     {meta.readTime}
                   </span>
                 ) : null}
+
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white ring-1 ring-inset ring-gray-200 hover:ring-gray-300 text-gray-700 hover:text-gray-900 transition-colors shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-900/20"
+                      aria-label="Compartir insight"
+                      title="Compartir"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      Compartir
+                    </button>
+                  </DropdownMenu.Trigger>
+
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content
+                      align="start"
+                      sideOffset={10}
+                      className="z-50 min-w-[220px] rounded-2xl bg-white border border-gray-100 shadow-xl p-2"
+                    >
+                      <DropdownMenu.Item asChild>
+                        <a
+                          href={shareLinks.whatsapp}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm text-gray-900 hover:bg-slate-50 focus:bg-slate-50 outline-none"
+                        >
+                          WhatsApp
+                          <span className="text-xs text-gray-500">+ link</span>
+                        </a>
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item asChild>
+                        <a
+                          href={shareLinks.linkedin}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm text-gray-900 hover:bg-slate-50 focus:bg-slate-50 outline-none"
+                        >
+                          LinkedIn
+                          <span className="text-xs text-gray-500">share</span>
+                        </a>
+                      </DropdownMenu.Item>
+                      <DropdownMenu.Item asChild>
+                        <a
+                          href={shareLinks.x}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm text-gray-900 hover:bg-slate-50 focus:bg-slate-50 outline-none"
+                        >
+                          X
+                          <span className="text-xs text-gray-500">tweet</span>
+                        </a>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
               </div>
 
               <h1 className="mt-6 text-4xl lg:text-6xl font-semibold tracking-tight text-gray-900 leading-[1.05]">
