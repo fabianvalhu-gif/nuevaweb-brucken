@@ -56,7 +56,7 @@ export function Header({ logoTone = 'color', variant = 'default' }: HeaderProps)
         <div className="flex justify-between items-center h-16 lg:h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <a href="#" className="flex items-center gap-3">
+            <a href="/" className="flex items-center gap-3" aria-label="Ir al inicio">
               <img
                 src="/hero/header/logo.png"
                 alt="Brücken Global"

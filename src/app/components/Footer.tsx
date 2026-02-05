@@ -7,45 +7,45 @@ export function Footer() {
     {
       title: 'Servicios',
       links: [
-        { label: 'Estrategia de crecimiento', href: '#consultoria', emphasize: true },
-        { label: 'Transformación operacional', href: '#consultoria' },
-        { label: 'Software factory', href: '#consultoria' },
-        { label: 'Expansión internacional', href: '#consultoria' },
-        { label: 'IA y analytics', href: '#consultoria' },
-        { label: 'Transformación digital', href: '#consultoria' },
+        { label: 'Estrategia de crecimiento', href: '/#consultoria', emphasize: true },
+        { label: 'Transformación operacional', href: '/#consultoria' },
+        { label: 'Software factory', href: '/#consultoria' },
+        { label: 'Expansión internacional', href: '/#consultoria' },
+        { label: 'IA y analytics', href: '/#consultoria' },
+        { label: 'Transformación digital', href: '/#consultoria' },
       ],
     },
     {
       title: 'Industrias',
       links: [
-        { label: 'Technology & SaaS', href: '#industrias' },
-        { label: 'Financial Services', href: '#industrias' },
-        { label: 'Retail & Consumer', href: '#industrias' },
-        { label: 'Healthcare', href: '#industrias' },
-        { label: 'Manufacturing', href: '#industrias' },
-        { label: 'Energy & Utilities', href: '#industrias' },
+        { label: 'Technology & SaaS', href: '/#industrias' },
+        { label: 'Financial Services', href: '/#industrias' },
+        { label: 'Retail & Consumer', href: '/#industrias' },
+        { label: 'Healthcare', href: '/#industrias' },
+        { label: 'Manufacturing', href: '/#industrias' },
+        { label: 'Energy & Utilities', href: '/#industrias' },
       ],
     },
     {
       title: 'Insights',
       links: [
-        { label: 'Artículos destacados', href: '#insights' },
-        { label: 'Investigación', href: '#insights' },
-        { label: 'Whitepapers', href: '#insights' },
-        { label: 'Casos de éxito', href: '#insights' },
-        { label: 'Webinars', href: '#insights' },
-        { label: 'Podcast', href: '#insights' },
+        { label: 'Artículos destacados', href: '/#insights' },
+        { label: 'Investigación', href: '/#insights' },
+        { label: 'Whitepapers', href: '/#insights' },
+        { label: 'Casos de éxito', href: '/#insights' },
+        { label: 'Webinars', href: '/#insights' },
+        { label: 'Podcast', href: '/#insights' },
       ],
     },
     {
       title: 'Nosotros',
       links: [
-        { label: 'Quiénes somos', href: '#nosotros' },
-        { label: 'Liderazgo', href: '#nosotros' },
-        { label: 'Carreras', href: '#nosotros' },
-        { label: 'Ubicaciones', href: '#nosotros' },
-        { label: 'Sostenibilidad', href: '#nosotros' },
-        { label: 'Prensa', href: '#nosotros' },
+        { label: 'Quiénes somos', href: '/#nosotros' },
+        { label: 'Liderazgo', href: '/#nosotros' },
+        { label: 'Carreras', href: '/#nosotros' },
+        { label: 'Ubicaciones', href: '/#nosotros' },
+        { label: 'Sostenibilidad', href: '/#nosotros' },
+        { label: 'Prensa', href: '/#nosotros' },
       ],
     },
   ];
@@ -58,11 +58,13 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-3 mb-6">
-              <img
-                src="/hero/header/logo.png"
-                alt="Brücken Global"
-                className="h-10 w-auto"
-              />
+              <a href="/" aria-label="Ir al inicio" className="inline-flex items-center">
+                <img
+                  src="/hero/header/logo.png"
+                  alt="Brücken Global"
+                  className="h-10 w-auto"
+                />
+              </a>
             </div>
             <p className="text-sm font-light text-gray-400 leading-relaxed">
               Consultoría estratégica y tecnológica para LATAM y mercados globales.
