@@ -5,6 +5,11 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { fetchFeaturedInsight, type Insight } from '@/app/lib/insights';
 import { isSupabaseConfigured } from '@/app/lib/supabaseClient';
 
+type Highlight = {
+  title: string;
+  description: string;
+};
+
 function formatFeaturedDate(dateIso: string | null) {
   if (!dateIso) return '';
   try {
@@ -12,6 +17,77 @@ function formatFeaturedDate(dateIso: string | null) {
   } catch {
     return dateIso;
   }
+}
+
+function stripMarkdown(text: string) {
+  return (
+    text
+      // images: ![alt](url)
+      .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+      // links: [text](url) -> text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      // inline code
+      .replace(/`([^`]+)`/g, '$1')
+      // emphasis
+      .replace(/[*_~]+/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  );
+}
+
+function truncate(text: string, max = 90) {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1).trimEnd()}…`;
+}
+
+function deriveHighlightsFromMarkdown(md: string): Highlight[] {
+  const src = md.replace(/\r\n/g, '\n');
+  const lines = src.split('\n');
+  const out: Highlight[] = [];
+
+  // Prefer H2/H3 headings and use the next paragraph line(s) as description.
+  for (let i = 0; i < lines.length && out.length < 2; i++) {
+    const line = lines[i].trim();
+    const m = /^(#{2,3})\s+(.*)$/.exec(line);
+    if (!m) continue;
+
+    const title = stripMarkdown(m[2] ?? '');
+    if (!title) continue;
+
+    const descParts: string[] = [];
+    for (let j = i + 1; j < lines.length; j++) {
+      const raw = lines[j].trim();
+      if (!raw) {
+        if (descParts.length) break;
+        continue;
+      }
+      if (/^#{1,6}\s+/.test(raw) || /^[-*+]\s+/.test(raw) || /^\d+\.\s+/.test(raw)) break;
+      descParts.push(stripMarkdown(raw));
+      if (descParts.join(' ').length >= 140) break;
+    }
+
+    const description = truncate(descParts.join(' ').trim(), 80);
+    out.push({ title: truncate(title, 44), description });
+  }
+
+  // Fallback: use first list items.
+  if (out.length < 2) {
+    for (let i = 0; i < lines.length && out.length < 2; i++) {
+      const raw = lines[i].trim();
+      const m = /^([-*+]|\d+\.)\s+(.*)$/.exec(raw);
+      if (!m) continue;
+      const item = stripMarkdown(m[2] ?? '');
+      if (!item) continue;
+
+      const parts = item.split(':').map((p) => p.trim()).filter(Boolean);
+      const title = truncate(parts[0] ?? item, 44);
+      const description = truncate(parts.slice(1).join(': '), 80);
+      out.push({ title, description });
+    }
+  }
+
+  return out;
 }
 
 export function FeaturedInsight() {
@@ -55,11 +131,23 @@ export function FeaturedInsight() {
       category,
       readTime,
       image: insight.cover_image_url ?? '',
+      contentMd: insight.content_md ?? '',
     };
   }, [insight]);
 
   // Fallback to the static block when Supabase is not configured.
   const isStatic = !isSupabaseConfigured;
+
+  const highlights = useMemo(() => {
+    const fallback: Highlight[] = [
+      { title: 'Nuevos modelos comerciales', description: 'Playbooks de revenue para B2B y B2C' },
+      { title: 'Tecnología aplicada', description: 'IA y automation en procesos críticos' },
+    ];
+
+    if (loading || isStatic) return fallback;
+    const derived = deriveHighlightsFromMarkdown(featured?.contentMd ?? '').filter((h) => h.title);
+    return derived.length >= 2 ? derived.slice(0, 2) : fallback;
+  }, [featured?.contentMd, isStatic, loading]);
 
   return (
     <section className="py-16 lg:py-24 bg-gray-50">
@@ -117,20 +205,17 @@ export function FeaturedInsight() {
             </p>
 
             <div className="space-y-4 mb-8">
-              <div className="flex items-start gap-3">
-                <div className="w-1 h-6 bg-fuchsia-600 flex-shrink-0 mt-1"></div>
-                <div>
-                  <div className="font-medium text-gray-900">Nuevos modelos comerciales</div>
-                  <div className="text-sm text-gray-600">Playbooks de revenue para B2B y B2C</div>
+              {highlights.slice(0, 2).map((h, idx) => (
+                <div key={`${h.title}-${idx}`} className="flex items-start gap-3">
+                  <div
+                    className={`w-1 h-6 flex-shrink-0 mt-1 ${idx === 0 ? 'bg-fuchsia-600' : 'bg-blue-600'}`}
+                  />
+                  <div>
+                    <div className="font-medium text-gray-900">{h.title}</div>
+                    {h.description ? <div className="text-sm text-gray-600">{h.description}</div> : null}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-1 h-6 bg-blue-600 flex-shrink-0 mt-1"></div>
-                <div>
-                  <div className="font-medium text-gray-900">Tecnología aplicada</div>
-                  <div className="text-sm text-gray-600">IA y automation en procesos críticos</div>
-                </div>
-              </div>
+              ))}
             </div>
 
             <a
