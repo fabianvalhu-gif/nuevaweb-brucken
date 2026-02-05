@@ -69,10 +69,10 @@ export function FeaturedInsight() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="grid lg:grid-cols-2 gap-0 bg-white overflow-hidden"
+          className="grid lg:grid-cols-2 gap-0 bg-white overflow-hidden lg:items-start"
         >
           {/* Image */}
-          <div className="relative h-96 lg:h-auto">
+          <div className="relative h-[320px] sm:h-[380px] lg:h-[520px]">
             {loading ? (
               <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
             ) : (
