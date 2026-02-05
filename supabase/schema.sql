@@ -52,6 +52,16 @@ for each row execute function public.set_updated_at();
 alter table public.admins enable row level security;
 alter table public.insights enable row level security;
 
+-- Admin table policies:
+-- Allow an authenticated user to read ONLY their own admin row.
+-- This avoids circular RLS policies and lets the frontend verify admin access safely.
+drop policy if exists "admin_self_read" on public.admins;
+create policy "admin_self_read"
+on public.admins
+for select
+to authenticated
+using (user_id = auth.uid());
+
 -- Public can read only published insights (and only once published_at is not in the future).
 drop policy if exists "public_read_published_insights" on public.insights;
 create policy "public_read_published_insights"
@@ -102,14 +112,3 @@ to authenticated
 using (
   exists (select 1 from public.admins a where a.user_id = auth.uid())
 );
-
--- Allow admins to self-check membership (useful for debugging).
-drop policy if exists "admin_read_admins" on public.admins;
-create policy "admin_read_admins"
-on public.admins
-for select
-to authenticated
-using (
-  exists (select 1 from public.admins a where a.user_id = auth.uid())
-);
-
