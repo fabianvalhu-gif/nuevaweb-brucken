@@ -10,6 +10,9 @@ import { CTASection } from '@/app/components/CTASection';
 import { Footer } from '@/app/components/Footer';
 import { ContactPage } from '@/app/pages/ContactPage';
 import { IndustryDetailPage } from '@/app/pages/IndustryDetailPage';
+import { InsightDetailPage } from '@/app/pages/InsightDetailPage';
+import { AdminInsightsPage } from '@/app/pages/AdminInsightsPage';
+import { InsightsIndexPage } from '@/app/pages/InsightsIndexPage';
 
 export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/contacto')) {
@@ -19,6 +22,19 @@ export default function App() {
   if (typeof window !== 'undefined' && window.location.pathname.startsWith('/industrias/')) {
     const slug = window.location.pathname.replace('/industrias/', '').split('/')[0];
     return <IndustryDetailPage slug={slug} />;
+  }
+
+  if (typeof window !== 'undefined' && window.location.pathname === '/insights') {
+    return <InsightsIndexPage />;
+  }
+
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/insights/')) {
+    const slug = window.location.pathname.replace('/insights/', '').split('/')[0];
+    return <InsightDetailPage slug={slug} />;
+  }
+
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+    return <AdminInsightsPage />;
   }
 
   return (

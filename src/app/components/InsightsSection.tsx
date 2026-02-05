@@ -1,34 +1,72 @@
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { fetchPublishedInsights, type Insight } from '@/app/lib/insights';
+import { isSupabaseConfigured } from '@/app/lib/supabaseClient';
 
 export function InsightsSection() {
-  const insights = [
-    {
-      category: 'Strategy',
-      title: 'Cinco palancas para acelerar crecimiento en mercados maduros',
-      author: 'María González, Partner',
-      date: 'Enero 20, 2026',
-      readTime: '8 min',
-      image: 'https://images.unsplash.com/photo-1758518729593-275baa967f78?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMHByb2Zlc3Npb25hbHMlMjBtZWV0aW5nfGVufDF8fHx8MTc2OTQwNTA2OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    },
-    {
-      category: 'Technology',
-      title: 'IA generativa: De la experimentación al impacto operacional',
-      author: 'Carlos Mendoza, Senior Partner',
-      date: 'Enero 18, 2026',
-      readTime: '12 min',
-      image: 'https://images.unsplash.com/photo-1758873268745-dd2cf0d677b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb3Jwb3JhdGUlMjBzdHJhdGVneSUyMHRlYW13b3JrfGVufDF8fHx8MTc2OTQ0OTc3NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    },
-    {
-      category: 'Operations',
-      title: 'El camino hacia la excelencia operacional en la era digital',
-      author: 'Ana Rodríguez, Partner',
-      date: 'Enero 15, 2026',
-      readTime: '10 min',
-      image: 'https://images.unsplash.com/photo-1759850426415-8888ea55b07b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnbG9iYWwlMjBidXNpbmVzcyUyMGNpdHklMjBza3lsaW5lfGVufDF8fHx8MTc2OTQ0OTc3NHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral',
-    },
-  ];
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let cancelled = false;
+
+    setLoading(true);
+    fetchPublishedInsights(3)
+      .then((data) => {
+        if (cancelled) return;
+        setInsights(data);
+      })
+      .catch(() => {
+        // Keep the section layout stable; if Supabase fails, just render empty.
+        if (cancelled) return;
+        setInsights([]);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const cards = useMemo(() => {
+    return insights.map((i) => {
+      const date = i.published_at ?? i.created_at;
+      const dateLabel = date
+        ? new Date(date).toLocaleDateString('es-CL', { year: 'numeric', month: 'short', day: 'numeric' })
+        : '';
+      const readTime = i.read_time_min ? `${i.read_time_min} min` : '';
+      return {
+        slug: i.slug,
+        category: i.category ?? 'Insight',
+        title: i.title,
+        author: i.author_name ?? '',
+        date: dateLabel,
+        readTime,
+        image: i.cover_image_url ?? '',
+      };
+    });
+  }, [insights]);
+
+  const displayCards = useMemo(() => {
+    if (loading) {
+      return Array.from({ length: 3 }).map((_, idx) => ({
+        slug: `loading-${idx}`,
+        category: '...',
+        title: 'Cargando insight...',
+        author: '',
+        date: '',
+        readTime: '',
+        image: '',
+      }));
+    }
+    return cards;
+  }, [cards, loading]);
 
   return (
     <section id="insights" className="py-16 lg:py-24 bg-white">
@@ -50,7 +88,7 @@ export function InsightsSection() {
             </p>
           </div>
           <a
-            href="#"
+            href={cards.length ? '/insights' : '#'}
             className="hidden lg:inline-flex items-center gap-2 text-gray-900 hover:gap-4 transition-all"
           >
             <span>Ver todos los artículos</span>
@@ -60,22 +98,27 @@ export function InsightsSection() {
 
         {/* Insights Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
-          {insights.map((insight, index) => (
-            <motion.article
-              key={index}
+          {displayCards.map((insight, index) => (
+            <motion.a
+              key={insight.slug}
+              href={loading ? undefined : `/insights/${insight.slug}`}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="group cursor-pointer"
+              className={`group ${loading ? 'pointer-events-none' : 'cursor-pointer'}`}
             >
               {/* Image */}
               <div className="relative h-56 mb-6 overflow-hidden bg-gray-100">
-                <ImageWithFallback
-                  src={insight.image}
-                  alt={insight.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+                {loading ? (
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
+                ) : (
+                  <ImageWithFallback
+                    src={insight.image}
+                    alt={insight.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                )}
               </div>
 
               {/* Content */}
@@ -103,14 +146,20 @@ export function InsightsSection() {
                   </div>
                 </div>
               </div>
-            </motion.article>
+            </motion.a>
           ))}
         </div>
+
+        {!loading && cards.length === 0 ? (
+          <div className="mt-10 text-gray-600 font-light">
+            Pronto publicaremos nuevos insights.
+          </div>
+        ) : null}
 
         {/* Mobile View All */}
         <div className="lg:hidden mt-12 text-center">
           <a
-            href="#"
+            href={cards.length ? '/insights' : '#'}
             className="inline-flex items-center gap-2 text-gray-900 hover:gap-4 transition-all"
           >
             <span>Ver todos los artículos</span>

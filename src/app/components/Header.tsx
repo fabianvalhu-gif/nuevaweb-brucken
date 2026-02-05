@@ -35,11 +35,11 @@ export function Header({ logoTone = 'color', variant = 'default' }: HeaderProps)
   }, []);
 
   const navItems = [
-    { name: 'Consultoría', href: '#consultoria' },
-    { name: 'Industrias', href: '#industrias' },
-    { name: 'Insights', href: '#insights' },
-    { name: 'Nosotros', href: '#nosotros' },
-    { name: 'Carreras', href: '#carreras' },
+    { name: 'Consultoría', href: '/#consultoria' },
+    { name: 'Industrias', href: '/#industrias' },
+    { name: 'Insights', href: '/#insights' },
+    { name: 'Nosotros', href: '/#nosotros' },
+    { name: 'Carreras', href: '/#carreras' },
   ];
 
   return (
