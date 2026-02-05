@@ -22,11 +22,14 @@ export function CTASection() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="bg-black text-white px-8 py-4 hover:bg-gray-800 transition-colors flex items-center gap-2 group w-full sm:w-auto justify-center">
+              <a
+                href="/contacto"
+                className="bg-black text-white px-8 py-4 hover:bg-gray-800 transition-colors flex items-center gap-2 group w-full sm:w-auto justify-center"
+              >
                 <Mail className="w-5 h-5" />
                 <span>Contactar con nosotros</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </a>
               
               <a
                 href="tel:+56993176140"
