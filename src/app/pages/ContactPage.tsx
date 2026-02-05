@@ -190,8 +190,8 @@ export function ContactPage() {
             <div className="bg-gradient-to-br from-blue-600 via-fuchsia-600 to-rose-500 text-white p-8 lg:p-10 shadow-sm">
               <h2 className="text-2xl font-semibold mb-4">¿Por qué Brücken?</h2>
               <ul className="space-y-3 text-sm text-white/90">
-                <li>Squads senior listos en 2 semanas.</li>
-                <li>Playbooks probados en LATAM y mercados globales.</li>
+                <li>Estrategias analizadas en las primeras 2 semanas.</li>
+                <li>Sistemas probados en LATAM y mercados globales.</li>
                 <li>Modelo boutique: atención directa de partners.</li>
                 <li>Integración de estrategia, producto y tecnología.</li>
               </ul>
