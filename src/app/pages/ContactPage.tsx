@@ -3,6 +3,7 @@ import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import { motion } from 'motion/react';
 import { Send } from 'lucide-react';
+import { getCountries, getCountryCallingCode } from 'libphonenumber-js';
 
 export function ContactPage() {
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -15,6 +16,66 @@ export function ContactPage() {
     if (status === 'error') return error ?? 'No se pudo enviar. Intenta nuevamente.';
     return 'Respondemos en menos de 24 horas hábiles. Si lo prefieres, escríbenos a soporte@bruckenglobal.com.';
   }, [status, error]);
+
+  const regionNames = useMemo(() => {
+    try {
+      return new Intl.DisplayNames(['es'], { type: 'region' });
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const countryOptions = useMemo(() => {
+    const codes =
+      // Modern browsers provide a full list of ISO 3166-1 regions.
+      // Fallback to libphonenumber-js list.
+      (typeof (Intl as any).supportedValuesOf === 'function'
+        ? ((Intl as any).supportedValuesOf('region') as string[])
+        : getCountries()) ?? [];
+
+    const items = codes
+      .filter((code) => /^[A-Z]{2}$/.test(code))
+      .map((code) => {
+        const name = regionNames?.of(code) || code;
+        return { code, name };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    return items;
+  }, [regionNames]);
+
+  const phoneCountryOptions = useMemo(() => {
+    const codes = getCountries();
+    const items = codes
+      .map((code) => {
+        const name = regionNames?.of(code) || code;
+        return { code, name };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    return items;
+  }, [regionNames]);
+
+  const phoneCountrySet = useMemo(() => new Set(phoneCountryOptions.map((c) => c.code)), [phoneCountryOptions]);
+
+  const defaultCountryCode = 'CL';
+  const [countryCode, setCountryCode] = useState<string>(defaultCountryCode);
+  const [phoneCountryCode, setPhoneCountryCode] = useState<string>(defaultCountryCode);
+
+  const phoneDialCode = useMemo(() => {
+    try {
+      return getCountryCallingCode(phoneCountryCode as any);
+    } catch {
+      return '';
+    }
+  }, [phoneCountryCode]);
+
+  function flagEmoji(iso2: string) {
+    const upper = iso2.toUpperCase();
+    if (!/^[A-Z]{2}$/.test(upper)) return '';
+    const A = 0x1f1e6;
+    const first = upper.charCodeAt(0) - 65;
+    const second = upper.charCodeAt(1) - 65;
+    return String.fromCodePoint(A + first, A + second);
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -48,7 +109,12 @@ export function ContactPage() {
 
                   const form = e.currentTarget;
                   const data = new FormData(form);
-                  const payload = Object.fromEntries(data.entries());
+                    const payload = Object.fromEntries(data.entries());
+                  const phone = String(payload.phoneNumber || '').trim();
+                  const fullPhone = phone ? `+${phoneDialCode} ${phone}`.trim() : '';
+                  const countryLabel =
+                    (payload.countryCode && regionNames?.of(String(payload.countryCode))) ||
+                    String(payload.countryCode || '');
 
                   try {
                     const res = await fetch('/api/contact', {
@@ -58,7 +124,8 @@ export function ContactPage() {
                         fullName: payload.fullName,
                         email: payload.email,
                         company: payload.company,
-                        country: payload.country,
+                        country: countryLabel,
+                        phone: fullPhone,
                         interest: payload.interest,
                         message: payload.message,
                         consent: payload.consent === 'on',
@@ -73,6 +140,8 @@ export function ContactPage() {
 
                     setStatus('sent');
                     form.reset();
+                    setCountryCode(defaultCountryCode);
+                    setPhoneCountryCode(defaultCountryCode);
                   } catch (err: unknown) {
                     setStatus('error');
                     setError(err instanceof Error ? err.message : 'Error enviando formulario');
@@ -114,15 +183,62 @@ export function ContactPage() {
                   </label>
                   <label className="flex flex-col gap-2 text-sm text-gray-800">
                     País
-                    <input
-                      type="text"
-                      name="country"
-                      placeholder="Chile, México, Colombia..."
-                      className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
-                      autoComplete="country-name"
-                    />
+                    <select
+                      name="countryCode"
+                      value={countryCode}
+                      onChange={(e) => {
+                        const code = e.target.value;
+                        setCountryCode(code);
+                        if (phoneCountrySet.has(code)) setPhoneCountryCode(code);
+                      }}
+                      className="rounded-lg border border-gray-200 bg-white px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                    >
+                      {countryOptions.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-gray-500">Selecciona tu país.</span>
                   </label>
                 </div>
+
+                <label className="flex flex-col gap-2 text-sm text-gray-800">
+                  Teléfono de contacto
+                  <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-3">
+                    <select
+                      name="phoneCountry"
+                      value={phoneCountryCode}
+                      onChange={(e) => setPhoneCountryCode(e.target.value)}
+                      className="rounded-lg border border-gray-200 bg-white px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                      aria-label="Código de país"
+                    >
+                      {phoneCountryOptions.map((c) => {
+                        const dial = getCountryCallingCode(c.code as any);
+                        const flag = flagEmoji(c.code);
+                        return (
+                          <option key={c.code} value={c.code}>
+                            {flag} +{dial} {c.name}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <div className="relative">
+                      <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
+                        +{phoneDialCode}
+                      </div>
+                      <input
+                        type="tel"
+                        name="phoneNumber"
+                        inputMode="tel"
+                        placeholder="9 1234 5678"
+                        className="w-full rounded-lg border border-gray-200 bg-slate-50 pl-16 pr-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                        autoComplete="tel"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-500">Incluye tu número (sin el +, lo agregamos automáticamente).</span>
+                </label>
 
                 {/* Honeypot (spam bots) */}
                 <input

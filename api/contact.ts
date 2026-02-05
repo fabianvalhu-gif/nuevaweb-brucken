@@ -3,6 +3,7 @@ type ContactPayload = {
   email?: string;
   company?: string;
   country?: string;
+  phone?: string;
   interest?: string;
   message?: string;
   consent?: boolean;
@@ -76,6 +77,7 @@ export default async function handler(req: any, res: any) {
   const email = clean(body.email, 160);
   const company = clean(body.company, 160);
   const country = clean(body.country, 80);
+  const phone = clean(body.phone, 80);
   const interest = clean(body.interest, 120);
   const message = clean(body.message, 6000);
   const consent = Boolean(body.consent);
@@ -110,6 +112,7 @@ export default async function handler(req: any, res: any) {
       <p><strong>Email:</strong> ${escaped(email)}</p>
       <p><strong>Empresa:</strong> ${escaped(company || '-')}</p>
       <p><strong>Pais:</strong> ${escaped(country || '-')}</p>
+      <p><strong>Telefono:</strong> ${escaped(phone || '-')}</p>
       <p><strong>Interes:</strong> ${escaped(interest || '-')}</p>
       <hr/>
       <p><strong>Mensaje:</strong></p>
