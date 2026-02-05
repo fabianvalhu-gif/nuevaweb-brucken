@@ -26,14 +26,20 @@ export function ContactPage() {
   }, []);
 
   const countryOptions = useMemo(() => {
-    const codes =
-      // Modern browsers provide a full list of ISO 3166-1 regions.
-      // Fallback to libphonenumber-js list.
-      (typeof (Intl as any).supportedValuesOf === 'function'
-        ? ((Intl as any).supportedValuesOf('region') as string[])
-        : getCountries()) ?? [];
+    // Modern browsers provide a full list of ISO 3166-1 regions, but some
+    // runtimes expose supportedValuesOf() without supporting the "region" key.
+    // If it throws, fall back to libphonenumber-js list.
+    let codes: string[] = [];
+    try {
+      codes =
+        typeof (Intl as any).supportedValuesOf === 'function'
+          ? (((Intl as any).supportedValuesOf('region') as string[]) ?? [])
+          : getCountries();
+    } catch {
+      codes = getCountries();
+    }
 
-    const items = codes
+    const items = (codes ?? [])
       .filter((code) => /^[A-Z]{2}$/.test(code))
       .map((code) => {
         const name = regionNames?.of(code) || code;
