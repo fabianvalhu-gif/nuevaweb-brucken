@@ -12,7 +12,9 @@ export function HeroSection() {
       <div className="absolute inset-0 -z-20">
         <img
           src={heroBgBack}
-          alt="Fondo abstracto capa posterior"
+          alt=""
+          aria-hidden="true"
+          role="presentation"
           className="w-full h-full object-cover"
           loading="eager"
           decoding="async"
@@ -23,7 +25,9 @@ export function HeroSection() {
       <div className="absolute inset-0 -z-10">
         <img
           src={heroBgFront}
-          alt="Patrón abstracto Brücken Global"
+          alt=""
+          aria-hidden="true"
+          role="presentation"
           className="w-full h-full object-cover"
           loading="eager"
           decoding="async"
