@@ -2,7 +2,7 @@ import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { motion } from 'motion/react';
-import type { ComponentType } from 'react';
+import { useEffect, type ComponentType } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -15,6 +15,7 @@ import {
   Users,
   Wrench,
 } from 'lucide-react';
+import { applySeo } from '@/app/lib/seo';
 
 type IndustrySlug =
   | 'automotriz-aftermarket'
@@ -415,6 +416,26 @@ function getIndustry(slug: string): IndustryData | null {
 
 export function IndustryDetailPage({ slug }: { slug: string }) {
   const industry = getIndustry(slug);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (!industry) {
+      applySeo({
+        title: `Industria no encontrada | Br\u00fccken Global`,
+        description: 'La industria que buscas no se encuentra.',
+        canonical: `${window.location.origin}/industrias/${slug}`,
+        noindex: true,
+      });
+      return;
+    }
+
+    applySeo({
+      title: `${industry.title} | Industrias | Br\u00fccken Global`,
+      description: industry.subtitle,
+      canonical: `${window.location.origin}/industrias/${industry.slug}`,
+      ogImage: industry.heroImage,
+    });
+  }, [slug, industry]);
 
   if (!industry) {
     return (

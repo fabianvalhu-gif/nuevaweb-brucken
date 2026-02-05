@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { applySeo } from '@/app/lib/seo';
 
 function formatDate(dateIso: string | null) {
   if (!dateIso) return '';
@@ -56,6 +57,19 @@ export function InsightDetailPage({ slug }: { slug: string }) {
     const dateLabel = formatDate(insight.published_at ?? insight.created_at);
     const readTime = insight.read_time_min ? `${insight.read_time_min} min` : null;
     return { dateLabel, readTime };
+  }, [insight]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!insight || insight.status !== 'published') return;
+
+    applySeo({
+      title: `${insight.title} | Br\u00fccken Global`,
+      description: insight.excerpt ?? undefined,
+      canonical: `${window.location.origin}/insights/${insight.slug}`,
+      ogImage: insight.cover_image_url ?? undefined,
+      type: 'article',
+    });
   }, [insight]);
 
   const shareUrl = useMemo(() => {
