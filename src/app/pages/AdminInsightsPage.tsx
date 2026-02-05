@@ -92,6 +92,23 @@ export function AdminInsightsPage() {
 
   const isLoggedIn = Boolean(sessionEmail);
 
+  function formatUnknownError(err: unknown, fallback: string) {
+    if (!err) return fallback;
+    if (err instanceof Error) return err.message || fallback;
+    if (typeof err === 'string') return err;
+    if (typeof err === 'object') {
+      const anyErr = err as any;
+      if (typeof anyErr.message === 'string' && anyErr.message) return anyErr.message;
+      if (typeof anyErr.error === 'string' && anyErr.error) return anyErr.error;
+      try {
+        return JSON.stringify(err);
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  }
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       setAuthLoading(false);
@@ -550,7 +567,10 @@ export function AdminInsightsPage() {
                                 setEditor((prev) => ({ ...prev, cover_image_url: data.publicUrl }));
                                 setNotice('Imagen subida.');
                               } catch (err: unknown) {
-                                setError(err instanceof Error ? err.message : 'Error subiendo imagen');
+                                // Supabase storage errors are not always instances of Error.
+                                const msg = formatUnknownError(err, 'Error subiendo imagen');
+                                console.error('Upload error:', err);
+                                setError(msg);
                               } finally {
                                 setSaving(false);
                                 // Allow uploading the same file again.
