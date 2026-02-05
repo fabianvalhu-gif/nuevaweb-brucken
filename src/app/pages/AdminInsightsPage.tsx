@@ -516,6 +516,17 @@ export function AdminInsightsPage() {
                           className="flex-1 rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
                           placeholder="https://... (o sube un archivo)"
                         />
+                        {editor.cover_image_url?.trim() ? (
+                          <a
+                            href={editor.cover_image_url.trim()}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center px-4 py-3 rounded-lg bg-white border border-gray-200 hover:border-gray-900 transition-colors"
+                            title="Abrir imagen en una pestaña nueva"
+                          >
+                            Abrir
+                          </a>
+                        ) : null}
                         <label className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white border border-gray-200 hover:border-gray-900 transition-colors cursor-pointer">
                           Subir imagen
                           <input

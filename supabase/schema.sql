@@ -136,3 +136,59 @@ select id
 from auth.users
 where email = 'gerencia@bruckenglobal.com'
 on conflict (user_id) do nothing;
+
+-- -----------------------------------------------------------------------------
+-- Storage (Cover images)
+-- -----------------------------------------------------------------------------
+-- The frontend renders cover images via a direct <img src="..."> URL.
+-- For that to work, the bucket must be public.
+-- Creates/updates the bucket and restricts uploads/edits to admins only.
+
+-- Create (or set) a PUBLIC bucket for insight images.
+insert into storage.buckets (id, name, public)
+values ('insights', 'insights', true)
+on conflict (id) do update set public = true;
+
+-- Storage policies (needed for client-side uploads with Supabase Auth).
+alter table storage.objects enable row level security;
+
+drop policy if exists "public_read_insights_bucket" on storage.objects;
+create policy "public_read_insights_bucket"
+on storage.objects
+for select
+to anon, authenticated
+using (bucket_id = 'insights');
+
+drop policy if exists "admin_insert_insights_bucket" on storage.objects;
+create policy "admin_insert_insights_bucket"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'insights'
+  and exists (select 1 from public.admins a where a.user_id = auth.uid())
+);
+
+drop policy if exists "admin_update_insights_bucket" on storage.objects;
+create policy "admin_update_insights_bucket"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'insights'
+  and exists (select 1 from public.admins a where a.user_id = auth.uid())
+)
+with check (
+  bucket_id = 'insights'
+  and exists (select 1 from public.admins a where a.user_id = auth.uid())
+);
+
+drop policy if exists "admin_delete_insights_bucket" on storage.objects;
+create policy "admin_delete_insights_bucket"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'insights'
+  and exists (select 1 from public.admins a where a.user_id = auth.uid())
+);
