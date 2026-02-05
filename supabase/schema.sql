@@ -19,6 +19,7 @@ create table if not exists public.insights (
   excerpt text,
   content_md text not null,
   cover_image_url text,
+  is_featured boolean not null default false,
   category text,
   author_name text,
   read_time_min integer,
@@ -31,6 +32,10 @@ create table if not exists public.insights (
 
 create index if not exists insights_published_at_idx on public.insights (published_at desc);
 create index if not exists insights_status_idx on public.insights (status);
+-- Ensure only one published insight can be featured at a time.
+create unique index if not exists insights_single_featured_published_idx
+on public.insights ((1))
+where (is_featured is true and status = 'published');
 
 -- Keep updated_at fresh
 create or replace function public.set_updated_at()

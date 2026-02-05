@@ -9,6 +9,7 @@ export type Insight = {
   excerpt: string | null;
   content_md: string;
   cover_image_url: string | null;
+  is_featured: boolean;
   category: string | null;
   author_name: string | null;
   read_time_min: number | null;
@@ -38,7 +39,7 @@ export async function fetchPublishedInsightCards(limit = 6): Promise<InsightCard
   const { data, error } = await supabase
     .from('insights')
     .select(
-      'id,slug,title,excerpt,cover_image_url,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+      'id,slug,title,excerpt,cover_image_url,is_featured,category,author_name,read_time_min,status,published_at,created_at,updated_at',
     )
     .eq('status', 'published')
     .order('published_at', { ascending: false })
@@ -54,7 +55,7 @@ export async function fetchPublishedInsights(limit = 6): Promise<Insight[]> {
   const { data, error } = await supabase
     .from('insights')
     .select(
-      'id,slug,title,excerpt,content_md,cover_image_url,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+      'id,slug,title,excerpt,content_md,cover_image_url,is_featured,category,author_name,read_time_min,status,published_at,created_at,updated_at',
     )
     .eq('status', 'published')
     .order('published_at', { ascending: false })
@@ -70,7 +71,7 @@ export async function fetchInsightBySlug(slug: string): Promise<Insight | null> 
   const { data, error } = await supabase
     .from('insights')
     .select(
-      'id,slug,title,excerpt,content_md,cover_image_url,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+      'id,slug,title,excerpt,content_md,cover_image_url,is_featured,category,author_name,read_time_min,status,published_at,created_at,updated_at',
     )
     .eq('slug', slug)
     .maybeSingle();
@@ -85,7 +86,7 @@ export async function fetchAllInsightsForAdmin(): Promise<Insight[]> {
   const { data, error } = await supabase
     .from('insights')
     .select(
-      'id,slug,title,excerpt,content_md,cover_image_url,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+      'id,slug,title,excerpt,content_md,cover_image_url,is_featured,category,author_name,read_time_min,status,published_at,created_at,updated_at',
     )
     .order('updated_at', { ascending: false });
 
@@ -99,12 +100,46 @@ export type InsightUpsert = {
   excerpt?: string | null;
   content_md: string;
   cover_image_url?: string | null;
+  is_featured?: boolean;
   category?: string | null;
   author_name?: string | null;
   read_time_min?: number | null;
   status: InsightStatus;
   published_at?: string | null;
 };
+
+export async function fetchFeaturedInsight(): Promise<Insight | null> {
+  if (!isSupabaseConfigured) return null;
+
+  // Prefer explicit featured published post.
+  const { data, error } = await supabase
+    .from('insights')
+    .select(
+      'id,slug,title,excerpt,content_md,cover_image_url,is_featured,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+    )
+    .eq('status', 'published')
+    .eq('is_featured', true)
+    .order('published_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (data) return data as Insight;
+
+  // Fallback: latest published.
+  const { data: latest, error: latestError } = await supabase
+    .from('insights')
+    .select(
+      'id,slug,title,excerpt,content_md,cover_image_url,is_featured,category,author_name,read_time_min,status,published_at,created_at,updated_at',
+    )
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (latestError) throw latestError;
+  return (latest as Insight) ?? null;
+}
 
 export async function createInsight(payload: InsightUpsert) {
   const { data, error } = await supabase

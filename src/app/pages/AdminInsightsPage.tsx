@@ -34,6 +34,7 @@ type EditorState = {
   excerpt: string;
   content_md: string;
   cover_image_url: string;
+  is_featured: boolean;
   category: string;
   author_name: string;
   read_time_min: string;
@@ -47,6 +48,7 @@ const EMPTY: EditorState = {
   excerpt: '',
   content_md: '',
   cover_image_url: '',
+  is_featured: false,
   category: '',
   author_name: '',
   read_time_min: '',
@@ -62,6 +64,7 @@ function toEditor(insight: Insight): EditorState {
     excerpt: insight.excerpt ?? '',
     content_md: insight.content_md ?? '',
     cover_image_url: insight.cover_image_url ?? '',
+    is_featured: Boolean(insight.is_featured),
     category: insight.category ?? '',
     author_name: insight.author_name ?? '',
     read_time_min: insight.read_time_min ? String(insight.read_time_min) : '',
@@ -229,12 +232,16 @@ export function AdminInsightsPage() {
         : isoNow()
       : null;
 
+    // Don't allow a draft to be featured.
+    const isFeatured = editor.is_featured && editor.status === 'published';
+
     const payload = {
       slug,
       title: editor.title.trim(),
       excerpt: editor.excerpt.trim() || null,
       content_md: editor.content_md,
       cover_image_url: editor.cover_image_url.trim() || null,
+      is_featured: isFeatured,
       category: editor.category.trim() || null,
       author_name: editor.author_name.trim() || null,
       read_time_min: parseReadTime(editor.read_time_min),
@@ -243,6 +250,12 @@ export function AdminInsightsPage() {
     };
 
     try {
+      // If we're featuring a post, clear any existing featured post first to avoid unique index conflicts.
+      if (payload.is_featured && payload.status === 'published') {
+        const clearQuery = supabase.from('insights').update({ is_featured: false }).eq('is_featured', true);
+        await (editor.id ? clearQuery.neq('id', editor.id) : clearQuery);
+      }
+
       if (editor.id) {
         await updateInsight(editor.id, payload);
         setNotice('Insight actualizado.');
@@ -450,7 +463,7 @@ export function AdminInsightsPage() {
 
                   {titleHint ? <div className="mt-4 text-sm text-gray-500">{titleHint}</div> : null}
 
-                  <div className="mt-8 grid md:grid-cols-2 gap-6">
+                <div className="mt-8 grid md:grid-cols-2 gap-6">
                     <label className="flex flex-col gap-2 text-sm text-gray-800">
                       Titulo
                       <input
@@ -496,12 +509,61 @@ export function AdminInsightsPage() {
 
                     <label className="flex flex-col gap-2 text-sm text-gray-800 md:col-span-2">
                       Imagen de portada (URL)
+                      <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                        <input
+                          value={editor.cover_image_url}
+                          onChange={(e) => setEditor((prev) => ({ ...prev, cover_image_url: e.target.value }))}
+                          className="flex-1 rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
+                          placeholder="https://... (o sube un archivo)"
+                        />
+                        <label className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-white border border-gray-200 hover:border-gray-900 transition-colors cursor-pointer">
+                          Subir imagen
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setSaving(true);
+                              setError(null);
+                              setNotice(null);
+                              try {
+                                const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
+                                const path = `covers/${Date.now()}-${safeName}`;
+                                const { error: upErr } = await supabase.storage
+                                  .from('insights')
+                                  .upload(path, file, { upsert: true, contentType: file.type });
+                                if (upErr) throw upErr;
+                                const { data } = supabase.storage.from('insights').getPublicUrl(path);
+                                setEditor((prev) => ({ ...prev, cover_image_url: data.publicUrl }));
+                                setNotice('Imagen subida.');
+                              } catch (err: unknown) {
+                                setError(err instanceof Error ? err.message : 'Error subiendo imagen');
+                              } finally {
+                                setSaving(false);
+                                // Allow uploading the same file again.
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        Requiere un bucket de Supabase Storage llamado <code className="px-2 py-1 bg-gray-50 border border-gray-200 rounded">insights</code> con acceso publico para lectura.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 text-sm text-gray-800 md:col-span-2">
                       <input
-                        value={editor.cover_image_url}
-                        onChange={(e) => setEditor((prev) => ({ ...prev, cover_image_url: e.target.value }))}
-                        className="rounded-lg border border-gray-200 bg-slate-50 px-4 py-3 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 outline-none transition-colors"
-                        placeholder="https://..."
+                        type="checkbox"
+                        checked={editor.is_featured}
+                        onChange={(e) => setEditor((prev) => ({ ...prev, is_featured: e.target.checked }))}
+                        className="mt-1"
                       />
+                      <span>
+                        Marcar como <span className="font-medium">Featured Insight</span> (solo uno publicado a la vez).
+                      </span>
                     </label>
 
                     <label className="flex flex-col gap-2 text-sm text-gray-800 md:col-span-2">
