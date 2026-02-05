@@ -112,3 +112,22 @@ to authenticated
 using (
   exists (select 1 from public.admins a where a.user_id = auth.uid())
 );
+
+-- Seed admin allowlist (optional).
+-- Safe to run multiple times. Inserts only if the user exists in auth.users.
+-- Prefer the email-based insert if you don't want to hardcode a UUID.
+
+-- 1) Seed by user_id (UUID):
+insert into public.admins (user_id)
+select '061feb25-88a9-491a-aece-93c4d2e513f5'::uuid
+where exists (
+  select 1 from auth.users where id = '061feb25-88a9-491a-aece-93c4d2e513f5'::uuid
+)
+on conflict (user_id) do nothing;
+
+-- 2) Seed by email (replace with your admin email if needed):
+insert into public.admins (user_id)
+select id
+from auth.users
+where email = 'gerencia@bruckenglobal.com'
+on conflict (user_id) do nothing;
